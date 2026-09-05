@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Smart Watchlist — track what matters in your portfolio" />
+    <title>Smart Watchlist</title>
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('sw-theme') || 'light';
+          if (t === 'dark' || t === 'pnl') document.documentElement.classList.add('dark');
+          if (t === 'pnl') document.documentElement.classList.add('theme-pnl');
+          document.documentElement.setAttribute('data-theme', t);
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+  </body>
+</html>
