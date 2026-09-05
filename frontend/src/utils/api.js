@@ -1,13 +1,9 @@
 import axios from 'axios';
 
-// Get the computer's IP address (replace with YOUR actual IP)
-// Find this using 'ipconfig' command
-const COMPUTER_IP = '10.88.251.237';  // ← CHANGE THIS TO YOUR IP
+// Use the environment variable, fallback to localhost for development
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
-// Works on both computer and phone
-const API_BASE_URL = window.location.hostname === 'localhost' 
-  ? 'http://localhost:8000' 
-  : `http://${COMPUTER_IP}:8000`;
+console.log('API_BASE_URL:', API_BASE_URL); // This will help debug
 
 const api = axios.create({
   baseURL: API_BASE_URL,
