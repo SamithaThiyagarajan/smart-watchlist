@@ -67,41 +67,25 @@ def get_digest(
             message="Your watchlist is empty. Add some stocks to track!"
         )
     
-    # Query events since last check (or all events if first time)
+    # ============================================================
+    # BUILD FULL MERGED LIST FIRST (NO TIER FILTER YET)
+    # ============================================================
+    
+    # Query events (no tier filter)
     events_query = db.query(MarketEvent).filter(
         MarketEvent.symbol.in_(symbols),
         MarketEvent.significance_score.isnot(None)
     )
-    
     if last_checked:
-        events_query = events_query.filter(
-            MarketEvent.timestamp > last_checked
-        )
+        events_query = events_query.filter(MarketEvent.timestamp > last_checked)
     
-    # Apply tier filter - FIXED RANGES
-    if filter_tier == "high":
-        events_query = events_query.filter(
-            MarketEvent.significance_score >= 60
-        )
-    elif filter_tier == "worth":
-        events_query = events_query.filter(
-            MarketEvent.significance_score >= 35,
-            MarketEvent.significance_score < 60
-        )
-    else:
-        # "all" or default - show everything >= 35
-        events_query = events_query.filter(
-            MarketEvent.significance_score >= 35
-        )
+    events = events_query.order_by(MarketEvent.significance_score.desc()).all()
     
-    events = events_query.order_by(
-        MarketEvent.significance_score.desc()
-    ).all()
-    
-    # Build digest items from events
-    digest_items = []
+    # Build FULL merged list
+    all_items = []
     symbols_with_events = set()
     
+    # Add event-based items
     for event in events:
         try:
             latest_snapshot = db.query(MarketSnapshot).filter(
@@ -109,25 +93,15 @@ def get_digest(
             ).order_by(MarketSnapshot.timestamp.desc()).first()
             
             score = event.significance_score or 0
-            
-            if score >= 60:
-                tier = "High attention"
-            elif score >= 35:
-                tier = "Worth knowing"
-            else:
-                tier = "Normal"
+            tier = "High attention" if score >= 60 else "Worth knowing" if score >= 35 else "Normal"
             
             description = generate_description(event, latest_snapshot, score)
-            
             engine = AttentionEngine(db, current_user.id)
             result = engine.calculate_attention_score(
-                symbol=event.symbol,
-                event=event,
-                snapshot=latest_snapshot
+                symbol=event.symbol, event=event, snapshot=latest_snapshot
             )
             reasons = result.get("reasons", [])
             
-            # Extract rupee impact prominently
             rupee_impact = None
             for reason in reasons:
                 if "impact on your" in reason:
@@ -145,7 +119,7 @@ def get_digest(
                 context["volume"] = latest_snapshot.volume
                 context["timestamp"] = latest_snapshot.timestamp
             
-            digest_items.append(DigestItem(
+            all_items.append(DigestItem(
                 symbol=event.symbol,
                 event_type=event.type,
                 description=description,
@@ -155,45 +129,33 @@ def get_digest(
                 context=context
             ))
             symbols_with_events.add(event.symbol)
-            
         except Exception as e:
             print(f"Error processing event {event.id}: {e}")
             continue
     
-    # ============================================================
-    # FIX: Add snapshot-based items for stocks with no events
-    # ============================================================
+    # Add snapshot-based items (for stocks with no events)
     engine = AttentionEngine(db, current_user.id)
-    
     for symbol in symbols:
         if symbol in symbols_with_events:
-            continue  # Already covered by an event
-        
-        # Get latest snapshot
+            continue
         latest_snapshot = db.query(MarketSnapshot).filter(
             MarketSnapshot.symbol == symbol
         ).order_by(MarketSnapshot.timestamp.desc()).first()
-        
         if not latest_snapshot:
             continue
         
-        # Calculate attention score using the REAL engine (event=None)
         result = engine.calculate_attention_score(
-            symbol=symbol,
-            event=None,
-            snapshot=latest_snapshot
+            symbol=symbol, event=None, snapshot=latest_snapshot
         )
         
-        # Only add if not "Normal"
         if result["tier"] != "Normal":
-            # Extract rupee impact from reasons
             rupee_impact = None
             for reason in result.get("reasons", []):
                 if "impact on your" in reason or "impact" in reason.lower():
                     rupee_impact = reason
                     break
             
-            digest_items.append(DigestItem(
+            all_items.append(DigestItem(
                 symbol=symbol,
                 event_type="price_alert",
                 description=f"{symbol} moved significantly (price: ₹{latest_snapshot.price:.2f})",
@@ -210,11 +172,21 @@ def get_digest(
                 }
             ))
     
-    # Re-sort by score
-    digest_items.sort(key=lambda x: x.significance_score, reverse=True)
+    # ============================================================
+    # NOW APPLY FILTER TO THE MERGED LIST
+    # ============================================================
     
-    total_new = len(digest_items)
-    top_items = digest_items[:5]
+    if filter_tier == "high":
+        filtered_items = [item for item in all_items if item.tier == "High attention"]
+    elif filter_tier == "worth":
+        filtered_items = [item for item in all_items if item.tier == "Worth knowing"]
+    else:
+        filtered_items = all_items
+    
+    # Sort and cap
+    filtered_items.sort(key=lambda x: x.significance_score, reverse=True)
+    total_new = len(filtered_items)
+    top_items = filtered_items[:5]
     
     # ONLY update checkpoint if:
     # 1. It's the default view (no filter or filter_tier='all')
@@ -224,9 +196,6 @@ def get_digest(
     if should_update:
         checkpoint.last_checked_at = current_time
         db.commit()
-        checkpoint_status = "updated"
-    else:
-        checkpoint_status = "preserved"
     
     if total_new == 0:
         if last_checked is None:
@@ -268,15 +237,8 @@ def generate_description(event: MarketEvent, snapshot: Optional[MarketSnapshot],
     
     description = descriptions.get(event_type, f"{symbol}: {event_type} event occurred")
     
-    # Add price context if available
     if snapshot:
         description += f" (Current price: ₹{snapshot.price:.2f})"
-    
-    # Add attention level indicator - NO EMOJIS
-    if score >= 60:
-        description = f"[HIGH] {description}"
-    elif score >= 45:
-        description = f"[WORTH] {description}"
     
     return description
 
