@@ -78,7 +78,7 @@ def get_digest(
             MarketEvent.timestamp > last_checked
         )
     
-    # Apply tier filter
+    # Apply tier filter - FIXED RANGES
     if filter_tier == "high":
         events_query = events_query.filter(
             MarketEvent.significance_score >= 60
@@ -161,7 +161,7 @@ def get_digest(
             continue
     
     # ============================================================
-    # 🔥 FIX: Add snapshot-based items for stocks with no events
+    # FIX: Add snapshot-based items for stocks with no events
     # ============================================================
     engine = AttentionEngine(db, current_user.id)
     
@@ -246,37 +246,37 @@ def get_digest(
 
 
 def generate_description(event: MarketEvent, snapshot: Optional[MarketSnapshot], score: float) -> str:
-    """Generate plain language description for an event"""
+    """Generate plain language description for an event - NO EMOJIS"""
     
     event_type = event.type.lower()
     symbol = event.symbol
     payload = event.payload
     
-    # Base descriptions
+    # Base descriptions - NO EMOJIS
     descriptions = {
-        "earnings": f"📊 {symbol} announced earnings with revenue of ₹{payload.get('revenue', 'N/A')} crore and profit of ₹{payload.get('profit', 'N/A')} crore",
-        "acquisition": f"🤝 {symbol} acquired {payload.get('target', 'a company')} for ₹{payload.get('value', 'N/A')} crore",
-        "management_change": f"👔 {symbol} appointed {payload.get('new_appointee', 'new')} as {payload.get('position', 'management')}",
-        "credit_rating_change": f"📈 {symbol}'s rating changed from {payload.get('old_rating', 'N/A')} to {payload.get('new_rating', 'N/A')} by {payload.get('agency', 'rating agency')}",
-        "regulatory_action": f"⚖️ {payload.get('agency', 'Regulator')} took {payload.get('action', 'action')} against {symbol}",
-        "stock_split": f"🔀 {symbol} announced a {payload.get('ratio', '')} stock split",
-        "bonus": f"🎁 {symbol} announced a {payload.get('ratio', '')} bonus issue",
-        "trading_halt": f"⏸️ Trading in {symbol} halted due to {payload.get('reason', '')}",
-        "dividend": f"💰 {symbol} announced dividend of ₹{payload.get('amount', 'N/A')} per share",
-        "insider_transaction": f"📋 {payload.get('insider', 'Insider')} {payload.get('type', 'transacted')} {payload.get('shares', 'N/A')} shares in {symbol}"
+        "earnings": f"{symbol} announced earnings with revenue of ₹{payload.get('revenue', 'N/A')} crore and profit of ₹{payload.get('profit', 'N/A')} crore",
+        "acquisition": f"{symbol} acquired {payload.get('target', 'a company')} for ₹{payload.get('value', 'N/A')} crore",
+        "management_change": f"{symbol} appointed {payload.get('new_appointee', 'new')} as {payload.get('position', 'management')}",
+        "credit_rating_change": f"{symbol}'s rating changed from {payload.get('old_rating', 'N/A')} to {payload.get('new_rating', 'N/A')} by {payload.get('agency', 'rating agency')}",
+        "regulatory_action": f"{payload.get('agency', 'Regulator')} took {payload.get('action', 'action')} against {symbol}",
+        "stock_split": f"{symbol} announced a {payload.get('ratio', '')} stock split",
+        "bonus": f"{symbol} announced a {payload.get('ratio', '')} bonus issue",
+        "trading_halt": f"Trading in {symbol} halted due to {payload.get('reason', '')}",
+        "dividend": f"{symbol} announced dividend of ₹{payload.get('amount', 'N/A')} per share",
+        "insider_transaction": f"{payload.get('insider', 'Insider')} {payload.get('type', 'transacted')} {payload.get('shares', 'N/A')} shares in {symbol}"
     }
     
-    description = descriptions.get(event_type, f"📌 {symbol}: {event_type} event occurred")
+    description = descriptions.get(event_type, f"{symbol}: {event_type} event occurred")
     
     # Add price context if available
     if snapshot:
         description += f" (Current price: ₹{snapshot.price:.2f})"
     
-    # Add attention level indicator
+    # Add attention level indicator - NO EMOJIS
     if score >= 60:
-        description = f"🔴 {description}"
+        description = f"[HIGH] {description}"
     elif score >= 45:
-        description = f"🟡 {description}"
+        description = f"[WORTH] {description}"
     
     return description
 
@@ -326,14 +326,3 @@ def get_checkpoint_status(
             "has_checked_before": False,
             "last_check_human": "Never"
         }
-
-
-@router.get("/test/generate-events")
-def generate_test_events(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Generate test events for a specific user (for testing)"""
-    
-    # Only allow in development
-    return {"message": "Use the mock data generator to create events"}
