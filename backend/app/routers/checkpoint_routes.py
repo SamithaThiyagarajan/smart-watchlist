@@ -98,8 +98,9 @@ def get_digest(
         MarketEvent.significance_score.desc()
     ).all()
     
-    # Get latest snapshots for each symbol (for context)
+    # Build digest items from events
     digest_items = []
+    symbols_with_events = set()
     
     for event in events:
         try:
@@ -153,9 +154,64 @@ def get_digest(
                 timestamp=event.timestamp,
                 context=context
             ))
+            symbols_with_events.add(event.symbol)
+            
         except Exception as e:
             print(f"Error processing event {event.id}: {e}")
             continue
+    
+    # ============================================================
+    # 🔥 FIX: Add snapshot-based items for stocks with no events
+    # ============================================================
+    engine = AttentionEngine(db, current_user.id)
+    
+    for symbol in symbols:
+        if symbol in symbols_with_events:
+            continue  # Already covered by an event
+        
+        # Get latest snapshot
+        latest_snapshot = db.query(MarketSnapshot).filter(
+            MarketSnapshot.symbol == symbol
+        ).order_by(MarketSnapshot.timestamp.desc()).first()
+        
+        if not latest_snapshot:
+            continue
+        
+        # Calculate attention score using the REAL engine (event=None)
+        result = engine.calculate_attention_score(
+            symbol=symbol,
+            event=None,
+            snapshot=latest_snapshot
+        )
+        
+        # Only add if not "Normal"
+        if result["tier"] != "Normal":
+            # Extract rupee impact from reasons
+            rupee_impact = None
+            for reason in result.get("reasons", []):
+                if "impact on your" in reason or "impact" in reason.lower():
+                    rupee_impact = reason
+                    break
+            
+            digest_items.append(DigestItem(
+                symbol=symbol,
+                event_type="price_alert",
+                description=f"{symbol} moved significantly (price: ₹{latest_snapshot.price:.2f})",
+                significance_score=result["attention_score"],
+                tier=result["tier"],
+                timestamp=latest_snapshot.timestamp,
+                context={
+                    "event_type": "price_alert",
+                    "reasons": result.get("reasons", []),
+                    "rupee_impact": rupee_impact,
+                    "price": latest_snapshot.price,
+                    "volume": latest_snapshot.volume,
+                    "timestamp": latest_snapshot.timestamp
+                }
+            ))
+    
+    # Re-sort by score
+    digest_items.sort(key=lambda x: x.significance_score, reverse=True)
     
     total_new = len(digest_items)
     top_items = digest_items[:5]
@@ -188,7 +244,6 @@ def get_digest(
         message=message
     )
 
-# ... rest of the file (generate_description, reset_checkpoint, get_checkpoint_status remain the same)
 
 def generate_description(event: MarketEvent, snapshot: Optional[MarketSnapshot], score: float) -> str:
     """Generate plain language description for an event"""
