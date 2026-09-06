@@ -49,7 +49,8 @@ def get_digest(
             total_new=0,
             last_checked_at=last_checked,
             current_time=current_time,
-            message="Add stocks to your watchlist to see updates"
+            message="Add stocks to your watchlist to see updates",
+            score_map={}
         )
     
     # Get stocks in watchlist
@@ -64,7 +65,8 @@ def get_digest(
             total_new=0,
             last_checked_at=last_checked,
             current_time=current_time,
-            message="Your watchlist is empty. Add some stocks to track!"
+            message="Your watchlist is empty. Add some stocks to track!",
+            score_map={}
         )
     
     # ============================================================
@@ -173,7 +175,7 @@ def get_digest(
             ))
     
     # ============================================================
-    # NOW APPLY FILTER TO THE MERGED LIST
+    # APPLY FILTER TO THE MERGED LIST
     # ============================================================
     
     if filter_tier == "high":
@@ -187,6 +189,33 @@ def get_digest(
     filtered_items.sort(key=lambda x: x.significance_score, reverse=True)
     total_new = len(filtered_items)
     top_items = filtered_items[:5]
+    
+    # ============================================================
+    # BUILD SCORE MAP FOR ALL WATCHLIST STOCKS
+    # ============================================================
+    score_map = {}
+    engine = AttentionEngine(db, current_user.id)
+    
+    for symbol in symbols:
+        latest_snapshot = db.query(MarketSnapshot).filter(
+            MarketSnapshot.symbol == symbol
+        ).order_by(MarketSnapshot.timestamp.desc()).first()
+        
+        if latest_snapshot:
+            result = engine.calculate_attention_score(
+                symbol=symbol,
+                event=None,
+                snapshot=latest_snapshot
+            )
+            score_map[symbol] = {
+                "score": result["attention_score"],
+                "tier": result["tier"]
+            }
+        else:
+            score_map[symbol] = {
+                "score": 0,
+                "tier": "Normal"
+            }
     
     # ONLY update checkpoint if:
     # 1. It's the default view (no filter or filter_tier='all')
@@ -210,7 +239,8 @@ def get_digest(
         total_new=total_new,
         last_checked_at=last_checked,
         current_time=current_time,
-        message=message
+        message=message,
+        score_map=score_map
     )
 
 
