@@ -89,7 +89,7 @@ Normal           < 35
 |---|---|
 | Backend | FastAPI (Python) |
 | Database | PostgreSQL |
-| Frontend | React |
+| Frontend | React + Tailwind CSS|
 | Auth | JWT |
 | Deployment | Render (backend) + Vercel (frontend) |
 
