@@ -55,3 +55,18 @@ def get_market_indices(
             "change": round(change * 0.9, 2)
         }
     }
+
+@router.post("/generate-events")
+def generate_events(
+    db: Session = Depends(get_db)
+):
+    """
+    Manually trigger the significance engine to process events.
+    This is useful when you want to score newly generated events.
+    """
+    try:
+        from app.significance_engine import process_events
+        process_events()
+        return {"message": "✅ Events processed successfully!", "status": "success"}
+    except Exception as e:
+        return {"message": f"❌ Error: {str(e)}", "status": "error"}
