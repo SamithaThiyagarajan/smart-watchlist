@@ -173,7 +173,7 @@ python -c "from app.significance_engine import process_events; process_events()"
 ## What I'd build next
 
 - **Per-symbol status on the watchlist table** — right now, only digest-featured symbols show a status; the rest default silently. This was cut deliberately (better to omit than show an inconsistent label) rather than ship it wrong.
-- **Per-user signal weighting** — let the four signals be weighted differently depending on user behavior (e.g. a long-term holder vs. an active trader).
+- **Per-user signal weighting** — let the five signals be weighted differently depending on user behavior (e.g. a long-term holder vs. an active trader).
 - **Ongoing/unresolved event tracking** — some situations (like an active trading halt) should stay surfaced until resolved, not just flagged once as "new since last check."
 - **Real market data feed** — the current version uses a simulated feed to keep focus on the attention-scoring logic; swapping in a live data source is the natural next step.
 
