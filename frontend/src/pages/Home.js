@@ -40,12 +40,11 @@ const Home = () => {
       let url = '/digest/since-last-check';
       const params = new URLSearchParams();
       
-      // FIX: Only add filter param if NOT 'all'
+      // Only add filter param if NOT 'all'
       if (filter && filter !== 'all') {
         params.append('filter_tier', filter);
         params.append('update_checkpoint', 'false');
       }
-      // If filter is 'all', send NO filter_tier (backend shows everything)
       
       if (forceReset) {
         await api.post('/digest/checkpoint/reset');
@@ -150,14 +149,6 @@ const Home = () => {
   const firstName = user?.email?.split('@')[0];
   const market = nseSession();
 
-  const attentionBySymbol = {};
-  (digest?.items || []).forEach((item) => {
-    const current = attentionBySymbol[item.symbol];
-    if (!current || item.tier === 'High attention' || (item.tier === 'Worth knowing' && current === 'Normal')) {
-      attentionBySymbol[item.symbol] = item.tier;
-    }
-  });
-
   const hasStaleData = freshness?.status === 'has_stale';
   const lastUpdated = freshness?.last_updated;
   const hasConflicts = Object.keys(conflicts).length > 0;
@@ -170,7 +161,6 @@ const Home = () => {
     ? `${Math.min(totalEvents, 3)} things deserve your attention`
     : 'Nothing significant changed';
 
-  // Use real market data or fallback
   const nifty = marketData?.nifty || { value: 24716.20, change: 0.42 };
   const sensex = marketData?.sensex || { value: 80432.15, change: 0.38 };
 
@@ -227,7 +217,7 @@ const Home = () => {
           </div>
         )}
 
-        {/* Since You Last Checked - ADDED ID FOR SCROLLING */}
+        {/* Since You Last Checked */}
         <div id="digest" className="mb-8">
           <div className="flex flex-wrap justify-between items-center gap-2 mb-4">
             <div>
@@ -304,7 +294,7 @@ const Home = () => {
           )}
         </div>
 
-        {/* Watchlist */}
+        {/* Watchlist - Status Column Removed */}
         <div id="watchlist">
           <div className="flex justify-between items-center mb-3">
             <h3 className={`text-base font-semibold tracking-tight ${isDark ? 'text-white' : 'text-[#1a1a2e]'}`}>Your Watchlist</h3>
@@ -337,29 +327,13 @@ const Home = () => {
                     <th className={`px-4 py-3 text-left text-xs font-medium ${isDark ? 'text-gray-400' : 'text-[#636e72]'} uppercase tracking-wider`}>Stock</th>
                     <th className={`px-4 py-3 text-right text-xs font-medium ${isDark ? 'text-gray-400' : 'text-[#636e72]'} uppercase tracking-wider`}>Price</th>
                     <th className={`px-4 py-3 text-right text-xs font-medium ${isDark ? 'text-gray-400' : 'text-[#636e72]'} uppercase tracking-wider`}>Today</th>
-                    <th className={`px-4 py-3 text-left text-xs font-medium ${isDark ? 'text-gray-400' : 'text-[#636e72]'} uppercase tracking-wider`}>Status</th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-[#636e72] uppercase tracking-wider"></th>
                   </tr>
                 </thead>
                 <tbody className={`divide-y ${isDark ? 'divide-[#2a2a45]' : 'divide-[#e9ecef]'}`}>
                   {watchlist.map((stock) => {
-                    const tier = attentionBySymbol[stock.symbol];
                     const hasConflict = !!conflicts[stock.symbol];
                     const realPrice = watchlistPrices[stock.symbol];
-                    
-                    let status = 'Normal';
-                    let statusColor = isDark ? 'text-gray-400' : 'text-[#636e72]';
-                    let statusBg = isDark ? 'bg-[#1a1a2e]' : 'bg-[#f0f0f0]';
-                    
-                    if (tier === 'High attention') {
-                      status = 'Unusual activity';
-                      statusColor = 'text-[#e94560]';
-                      statusBg = isDark ? 'bg-[#e94560]/20' : 'bg-red-50';
-                    } else if (tier === 'Worth knowing') {
-                      status = 'Sector divergence';
-                      statusColor = 'text-[#fdcb6e]';
-                      statusBg = isDark ? 'bg-[#fdcb6e]/20' : 'bg-yellow-50';
-                    }
                     
                     const price = realPrice || stock.reference_price || 0;
                     const change = stock.reference_price && price 
@@ -378,11 +352,6 @@ const Home = () => {
                         </td>
                         <td className={`px-4 py-3 text-right text-sm font-medium tabular ${isPositive ? 'text-[#00b894]' : 'text-[#e17055]'}`}>
                           {price > 0 ? `${isPositive ? '+' : ''}${change.toFixed(1)}%` : '—'}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className={`text-xs px-2 py-1 rounded-full ${statusBg} ${statusColor}`}>
-                            {status}
-                          </span>
                         </td>
                         <td className="px-4 py-3 text-right">
                           <button
