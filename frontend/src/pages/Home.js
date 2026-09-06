@@ -225,8 +225,8 @@ const Home = () => {
           </div>
         )}
 
-        {/* Since You Last Checked */}
-        <div className="mb-8">
+        {/* Since You Last Checked - ADDED ID FOR SCROLLING */}
+        <div id="digest" className="mb-8">
           <div className="flex flex-wrap justify-between items-center gap-2 mb-4">
             <div>
               <h2 className={`text-lg font-semibold tracking-tight ${isDark ? 'text-white' : 'text-[#1a1a2e]'}`}>Since you last checked</h2>
@@ -302,8 +302,8 @@ const Home = () => {
           )}
         </div>
 
-        {/* Watchlist */}
-        <div>
+        {/* Watchlist - ADDED ID FOR SCROLLING */}
+        <div id="watchlist">
           <div className="flex justify-between items-center mb-3">
             <h3 className={`text-base font-semibold tracking-tight ${isDark ? 'text-white' : 'text-[#1a1a2e]'}`}>Your Watchlist</h3>
             <span className={`text-xs ${isDark ? 'text-gray-400 bg-[#1a1a2e] border-[#2a2a45]' : 'text-[#636e72] bg-white border-[#e9ecef]'} px-3 py-1 rounded-full border`}>
@@ -316,7 +316,7 @@ const Home = () => {
               type="text"
               value={newStock}
               onChange={(e) => setNewStock(e.target.value)}
-              placeholder="Add stock"
+              placeholder="e.g. RELIANCE, TCS, HDFC, SBIN"
               className={`flex-1 px-4 py-2 text-sm ${isDark ? 'bg-[#1a1a2e] border-[#2a2a45] text-white placeholder:text-gray-500' : 'bg-white border-[#e9ecef] text-[#1a1a2e] placeholder:text-[#636e72]'} border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#667eea]/30 focus:border-[#667eea]`}
             />
             <button
