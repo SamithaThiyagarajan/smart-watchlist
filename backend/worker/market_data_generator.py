@@ -197,10 +197,12 @@ def save_market_events(db: Session, events):
         )
         db.add(event)
     db.commit()
-
+    
 async def run_market_generator():
     """Main loop for generating mock market data"""
     print("Starting market data generator...")
+    
+    cycle_count = 0
     
     while True:
         try:
@@ -209,23 +211,30 @@ async def run_market_generator():
             # Generate market snapshots
             snapshots = generate_market_snapshot()
             save_market_snapshots(db, snapshots)
-            print(f"Generated {len(snapshots)} snapshots at {datetime.now(timezone.utc)}")
+            print(f"Generated {len(snapshots)} snapshots at {datetime.now()}")
             
-            # Occasionally generate events (10% chance each cycle)
+            # Occasionally generate events (50% chance each cycle)
             if random.random() < 0.5:
                 num_events = random.randint(1, 3)
                 events = [generate_event() for _ in range(num_events)]
                 save_market_events(db, events)
-                print(f"Generated {num_events} events at {datetime.now(timezone.utc)}")
+                print(f"Generated {num_events} events at {datetime.now()}")
+                
+                # 👇 NEW: Auto-score events right after generating them
+                try:
+                    from app.significance_engine import process_events
+                    process_events()
+                    print(f"✅ Scored events at {datetime.now()}")
+                except Exception as e:
+                    print(f"⚠️ Scoring error: {e}")
             
             db.close()
             
-            # Wait 10-30 seconds before next update
+            # Wait 5-15 seconds before next update
             await asyncio.sleep(random.randint(5, 15))
             
         except Exception as e:
             print(f"Error in market generator: {e}")
             await asyncio.sleep(60)  # Wait a minute before retrying
-
 if __name__ == "__main__":
     asyncio.run(run_market_generator())
