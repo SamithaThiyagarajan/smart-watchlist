@@ -40,10 +40,12 @@ const Home = () => {
       let url = '/digest/since-last-check';
       const params = new URLSearchParams();
       
-      if (filter !== 'all') {
+      // FIX: Only add filter param if NOT 'all'
+      if (filter && filter !== 'all') {
         params.append('filter_tier', filter);
         params.append('update_checkpoint', 'false');
       }
+      // If filter is 'all', send NO filter_tier (backend shows everything)
       
       if (forceReset) {
         await api.post('/digest/checkpoint/reset');
@@ -185,7 +187,7 @@ const Home = () => {
           </p>
         </div>
 
-        {/* Market Summary - NOW FROM BACKEND */}
+        {/* Market Summary */}
         <div className={`grid grid-cols-3 gap-4 ${isDark ? 'bg-[#141420] border-[#2a2a45]' : 'bg-white border-[#e9ecef]'} rounded-xl p-4 shadow-sm border mb-6`}>
           <div>
             <p className={`text-[11px] font-medium tracking-wide ${isDark ? 'text-gray-400' : 'text-[#636e72]'}`}>NIFTY 50</p>
@@ -302,7 +304,7 @@ const Home = () => {
           )}
         </div>
 
-        {/* Watchlist - ADDED ID FOR SCROLLING */}
+        {/* Watchlist */}
         <div id="watchlist">
           <div className="flex justify-between items-center mb-3">
             <h3 className={`text-base font-semibold tracking-tight ${isDark ? 'text-white' : 'text-[#1a1a2e]'}`}>Your Watchlist</h3>
@@ -427,7 +429,7 @@ const Home = () => {
   );
 };
 
-// EventCard - No emojis in details section
+// EventCard - Clean, no emojis
 const EventCard = ({ item, isDark }) => {
   const [showDetails, setShowDetails] = useState(false);
   
@@ -465,6 +467,12 @@ const EventCard = ({ item, isDark }) => {
     r => r.toLowerCase().includes('sector') || r.toLowerCase().includes('divergence')
   );
 
+  // Clean description - remove emojis
+  const cleanDescription = item.description?.replace(/[🔴🟡📊🤝👔📈⚖️🔀🎁⏸️💰📋🎁📌]/g, '').trim() || '';
+
+  // Clean rupee impact - remove emojis
+  const cleanRupeeImpact = rupeeImpact.replace(/[💰💸]/g, '').trim();
+
   return (
     <div className={`${isDark ? 'bg-[#141420] border-[#2a2a45]' : 'bg-white border-[#e9ecef]'} rounded-xl border p-5 shadow-sm hover:shadow-md transition-shadow`}>
       <div className="flex justify-between items-start mb-2">
@@ -499,9 +507,9 @@ const EventCard = ({ item, isDark }) => {
         )}
       </div>
 
-      {rupeeImpact && (
+      {cleanRupeeImpact && (
         <div className={`text-sm font-medium ${isDark ? 'text-[#7c8cf5]' : 'text-[#667eea]'} mb-3`}>
-          {rupeeImpact}
+          {cleanRupeeImpact}
         </div>
       )}
 
@@ -520,7 +528,7 @@ const EventCard = ({ item, isDark }) => {
       {showDetails && (
         <div className={`mt-3 p-3 ${isDark ? 'bg-[#1a1a2e] border-[#2a2a45]' : 'bg-[#f8f9fa] border-[#e9ecef]'} rounded-lg border`}>
           <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-[#1a1a2e]'} mb-2 leading-relaxed`}>
-            {item.description}
+            {cleanDescription}
           </p>
           
           {reasons.length > 0 && (
