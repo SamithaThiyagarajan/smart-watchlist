@@ -9,7 +9,7 @@ Built for CODE 2026 — Groww's engineering hackathon.
 ## Status
 
 - **Local development**: fully working end-to-end (frontend + backend + database).
-- **Deployed**: frontend and backend are both live on the cloud. The production database connection is being finalized — if any endpoint on the live backend errors out, the local setup below is the guaranteed-working version.
+- **Deployed**: fully working end-to-end — frontend, backend, and production database are all live and connected.
 
 | Service | URL |
 |---|---|
@@ -172,7 +172,7 @@ python -c "from app.significance_engine import process_events; process_events()"
 
 ## What I'd build next
 
-Per-user signal weighting, an ongoing/unresolved-event tracker (e.g. an active trading halt that should stay surfaced until resolved, not just "new since last check"), and a real market data feed in place of the simulated one.
+Per-symbol status directly on the watchlist table (currently the full attention score for every symbol, not just digest-featured ones, isn't yet surfaced there — this was cut deliberately to avoid shipping an inconsistent status label rather than leave it wrong), per-user signal weighting, an ongoing/unresolved-event tracker (e.g. an active trading halt that should stay surfaced until resolved, not just "new since last check"), and a real market data feed in place of the simulated one.
 
 ---
 
