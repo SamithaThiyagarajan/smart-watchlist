@@ -45,6 +45,7 @@ const Home = () => {
         params.append('filter_tier', filter);
         params.append('update_checkpoint', 'false');
       }
+      // If filter is 'all', send NO filter_tier (backend shows everything)
       
       if (forceReset) {
         await api.post('/digest/checkpoint/reset');
@@ -149,8 +150,13 @@ const Home = () => {
   const firstName = user?.email?.split('@')[0];
   const market = nseSession();
 
-  // ✅ USE SCORE_MAP FROM DIGEST FOR WATCHLIST STATUS
-  const scoreMap = digest?.score_map || {};
+  const attentionBySymbol = {};
+  (digest?.items || []).forEach((item) => {
+    const current = attentionBySymbol[item.symbol];
+    if (!current || item.tier === 'High attention' || (item.tier === 'Worth knowing' && current === 'Normal')) {
+      attentionBySymbol[item.symbol] = item.tier;
+    }
+  });
 
   const hasStaleData = freshness?.status === 'has_stale';
   const lastUpdated = freshness?.last_updated;
@@ -164,6 +170,7 @@ const Home = () => {
     ? `${Math.min(totalEvents, 3)} things deserve your attention`
     : 'Nothing significant changed';
 
+  // Use real market data or fallback
   const nifty = marketData?.nifty || { value: 24716.20, change: 0.42 };
   const sensex = marketData?.sensex || { value: 80432.15, change: 0.38 };
 
@@ -220,7 +227,7 @@ const Home = () => {
           </div>
         )}
 
-        {/* Since You Last Checked */}
+        {/* Since You Last Checked - ADDED ID FOR SCROLLING */}
         <div id="digest" className="mb-8">
           <div className="flex flex-wrap justify-between items-center gap-2 mb-4">
             <div>
@@ -336,8 +343,7 @@ const Home = () => {
                 </thead>
                 <tbody className={`divide-y ${isDark ? 'divide-[#2a2a45]' : 'divide-[#e9ecef]'}`}>
                   {watchlist.map((stock) => {
-                    // ✅ USE SCORE_MAP FOR STATUS
-                    const tier = scoreMap[stock.symbol]?.tier || 'Normal';
+                    const tier = attentionBySymbol[stock.symbol];
                     const hasConflict = !!conflicts[stock.symbol];
                     const realPrice = watchlistPrices[stock.symbol];
                     

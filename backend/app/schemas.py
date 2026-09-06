@@ -26,8 +26,8 @@ class Token(BaseModel):
 # Watchlist schemas
 class WatchlistStockAdd(BaseModel):
     symbol: str
-    quantity: Optional[int] = 100
-    reference_price: Optional[float] = None
+    quantity: Optional[int] = 0  # ← ADD THIS
+    reference_price: Optional[float] = None  # ← ADD THIS
 
 class WatchlistStockOut(BaseModel):
     symbol: str
@@ -67,4 +67,3 @@ class DigestResponse(BaseModel):
     last_checked_at: Optional[datetime]
     current_time: datetime
     message: Optional[str] = None
-    score_map: Optional[Dict[str, Dict[str, Any]]] = None  # ← ADDED
